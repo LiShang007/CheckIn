@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <com.lishang.checkin.view.CheckInProgress
+        android:id="@+id/checkIn"
+        android:layout_width="300dp"
+        android:layout_height="100dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@android:color/darker_gray"
+        app:align="center"
+        app:check_in_bitmap="@drawable/icon_date_checkin"
+        app:circle_color="@color/colorAccent"
+        app:circle_margin="5dp"
+        app:circle_stroke_width="1dp"
+        app:line_color="@color/colorAccent"
+        app:line_height="1dp"
+        app:radius="10dp"
+        app:text_date_color="#efefef"
+        app:text_date_size="12sp"
+        app:text_score_color="#efefef"
+        app:text_score_size="12sp" />
+
+</LinearLayout>
