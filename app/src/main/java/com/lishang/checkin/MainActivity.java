@@ -2,10 +2,9 @@ package com.lishang.checkin;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 
+import com.lishang.checkin.adapter.CheckInAdapter;
 import com.lishang.checkin.bean.CheckIn;
-import com.lishang.checkin.view.CheckInProgress;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
         initDate();
 
-        checkIn.setAdapter(new CheckInProgress.CheckInAdapter() {
+        checkIn.setAdapter(new CheckInAdapter() {
 
             @Override
             public String getDateText(int position) {

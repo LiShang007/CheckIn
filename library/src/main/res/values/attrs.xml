@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="CheckInProgress">
+        <!--位置-->
+        <attr name="align" format="enum">
+            <enum name="top" value="1" />
+            <enum name="center" value="2" />
+            <enum name="bottom" value="3" />
+        </attr>
+        <!--日期文字大小-->
+        <attr name="text_date_size" format="dimension" />
+        <!--日期文字颜色-->
+        <attr name="text_date_color" format="color" />
+        <!--签到圆半径-->
+        <attr name="radius" format="dimension" />
+        <!--圆的背景色-->
+        <attr name="circle_color" format="color" />
+        <!--线高-->
+        <attr name="line_height" format="dimension" />
+        <!---线的颜色-->
+        <attr name="line_color" format="color" />
+        <!--签到积分字体大小-->
+        <attr name="text_score_size" format="dimension" />
+        <!--签到积分字体颜色-->
+        <attr name="text_score_color" format="color" />
+        <!--签到图片-->
+        <attr name="check_in_bitmap" format="reference" />
+        <!--没有签到图片时，签到的颜色-->
+        <attr name="check_in_color" format="color" />
+        <!--没有签到图片时，签到内部的颜色-->
+        <attr name="check_in_hook_color" format="color" />
+        <!--签到圆顶部与日期字体距离-->
+        <attr name="circle_margin" format="dimension" />
+        <!--签到圆描边宽度-->
+        <attr name="circle_stroke_width" format="dimension" />
+        <!--签到圆边描颜色-->
+        <attr name="circle_stroke_color" format="color" />
+        <!--签到圆样式 fill 填充 stroke描边（circle_stroke_width、circle_stroke_color生效）-->
+        <attr name="circle_style" format="enum">
+            <enum name="fill" value="0" />
+            <enum name="stroke" value="1" />
+        </attr>
+        <!--是否显示签到进度-->
+        <attr name="check_in_progress_show" format="boolean" />
+        <attr name="check_in_progress_color" format="color" />
+    </declare-styleable>
+</resources>

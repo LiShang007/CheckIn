@@ -1,23 +1,21 @@
-package com.lishang.checkin.view;
+package com.lishang.checkin;
 
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
-import android.util.TypedValue;
 import android.view.View;
 
-import com.lishang.checkin.R;
+import com.lishang.checkin.adapter.CheckInAdapter;
+import com.lishang.library.R;
 
 
 /**
@@ -34,7 +32,14 @@ public class CheckInProgress extends View {
     private int textScoreColor = 0xff8e8e8e;
     private Bitmap checkIn;
     private int circleMargin = 10; //圆与日期间隔
-    private int circleStorkeWidth = 1;
+    private Paint.Style circleStyle = Paint.Style.FILL;
+    private int circleStrokeWidth = 1;
+    private int circleStrokeColor = 0xffffffff;
+    private boolean checkInProgressShow = false; //是否显示签到进度
+    private int checkInProgressColor = lineColor;
+    private int checkInColor = checkInProgressColor;
+    private int checkInHookColor = lineColor;
+
     private Paint datePaint; //日期画笔
     private Paint scorePaint;//分数画笔
     private Paint linePaint;//线画笔
@@ -85,8 +90,22 @@ public class CheckInProgress extends View {
             checkIn = BitmapFactory.decodeResource(getResources(), resId);
         }
         circleMargin = array.getDimensionPixelOffset(R.styleable.CheckInProgress_circle_margin, circleMargin);
-        circleStorkeWidth = array.getDimensionPixelOffset(R.styleable.CheckInProgress_circle_stroke_width, circleStorkeWidth);
+        circleStrokeWidth = array.getDimensionPixelOffset(R.styleable.CheckInProgress_circle_stroke_width, circleStrokeWidth);
+        circleStrokeColor = array.getColor(R.styleable.CheckInProgress_circle_stroke_color, circleStrokeColor);
+        int style = array.getInt(R.styleable.CheckInProgress_circle_style, 0);
+        switch (style) {
+            case 1:
+                circleStyle = Paint.Style.STROKE;
+                break;
+            default:
+                circleStyle = Paint.Style.FILL;
+                break;
+        }
 
+        checkInProgressShow = array.getBoolean(R.styleable.CheckInProgress_check_in_progress_show, checkInProgressShow);
+        checkInProgressColor = array.getColor(R.styleable.CheckInProgress_check_in_progress_color, checkInProgressColor);
+        checkInColor = array.getColor(R.styleable.CheckInProgress_check_in_color, checkInColor);
+        checkInHookColor = array.getColor(R.styleable.CheckInProgress_check_in_hook_color, checkInHookColor);
 
         array.recycle();
         init();
@@ -263,6 +282,8 @@ public class CheckInProgress extends View {
         int stopX = datePointPool.get(datePointPool.size() - 1).x;
         int stopY = startY;
         canvas.drawLine(startX, startY, stopX, stopY, linePaint);
+
+
     }
 
     private void drawScore(Canvas canvas) {
@@ -274,6 +295,17 @@ public class CheckInProgress extends View {
 
 
             if (adapter.isCheckIn(i)) {
+
+                if (checkInProgressShow && i + 1 < adapter.size()) {
+                    //进度
+                    scorePaint.setStyle(Paint.Style.FILL);
+                    scorePaint.setColor(checkInProgressColor);
+                    scorePaint.setStrokeWidth((lineHeight));
+
+                    Point p1 = circlePointPool.get(i + 1);
+                    canvas.drawLine(p.x, p.y + margin, p1.x, p1.y + margin, scorePaint);
+                }
+
                 if (checkIn != null) {
                     float scale = radiusPx * 2.0f / checkIn.getWidth();
                     Matrix matrix = new Matrix();
@@ -283,38 +315,41 @@ public class CheckInProgress extends View {
                     canvas.drawBitmap(checkIn, matrix, scorePaint);
                     canvas.restore();
                 } else {
-                    scorePaint.setColor(circleColor);
+                    scorePaint.setColor(checkInColor);
                     scorePaint.setStyle(Paint.Style.FILL);
                     canvas.drawCircle(p.x, p.y + margin, radiusPx, scorePaint);
 
                     //画勾
                     scorePaint.setStyle(Paint.Style.FILL);
-                    scorePaint.setColor(Color.WHITE);
-                    scorePaint.setStrokeWidth((circleStorkeWidth));
+                    scorePaint.setColor(checkInHookColor);
+                    scorePaint.setStrokeWidth((circleStrokeWidth));
                     int startX = p.x - radiusPx / 4 * 3;
-                    int startY = p.y;
+                    int startY = p.y + margin;
                     int stopX = p.x - radiusPx / 4;
-                    int stopY = p.y + radiusPx / 2;
+                    int stopY = p.y + margin + radiusPx / 2;
                     canvas.drawLine(startX, startY, stopX, stopY, scorePaint);
 
                     startX = stopX;
                     startY = stopY;
                     stopX = p.x + radiusPx / 4 * 3;
-                    stopY = p.y - radiusPx / 2;
+                    stopY = p.y + margin - radiusPx / 2;
                     canvas.drawLine(startX, startY, stopX, stopY, scorePaint);
 
+                    canvas.drawCircle(startX, startY, circleStrokeWidth / 2.0f, scorePaint);
                 }
 
 
             } else {
                 scorePaint.setStyle(Paint.Style.FILL);
-                scorePaint.setColor(Color.WHITE);
+                scorePaint.setColor(circleColor);
                 canvas.drawCircle(p.x, p.y + margin, radiusPx, scorePaint);
 
-                scorePaint.setColor(circleColor);
-                scorePaint.setStrokeWidth((circleStorkeWidth));
-                scorePaint.setStyle(Paint.Style.STROKE);
-                canvas.drawCircle(p.x, p.y + margin, radiusPx, scorePaint);
+                if (circleStyle == Paint.Style.STROKE) {
+                    scorePaint.setColor(circleStrokeColor);
+                    scorePaint.setStrokeWidth((circleStrokeWidth));
+                    scorePaint.setStyle(Paint.Style.STROKE);
+                    canvas.drawCircle(p.x, p.y + margin, radiusPx, scorePaint);
+                }
 
                 scorePaint.setTextSize((textScoreSize));
                 scorePaint.setStyle(Paint.Style.FILL);
@@ -337,16 +372,5 @@ public class CheckInProgress extends View {
         }
     }
 
-
-
-    public abstract static class CheckInAdapter {
-        public abstract String getDateText(int position);
-
-        public abstract String getScoreText(int position);
-
-        public abstract boolean isCheckIn(int position);
-
-        public abstract int size();
-    }
 
 }
