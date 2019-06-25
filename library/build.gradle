@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 28
@@ -30,4 +31,18 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
+
+publish {
+    userOrg = 'lishang007'
+    groupId = 'com.lishang'
+    repoName = "maven"
+    artifactId = 'checkInProgress'
+    publishVersion = '1.0.0'
+    desc = '签到进度'
+    website = 'https://github.com/LiShang007/CheckIn'
+}
+
+task javadoc(type: Javadoc) {
+    options.encoding = "utf-8"
 }

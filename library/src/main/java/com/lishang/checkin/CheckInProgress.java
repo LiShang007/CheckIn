@@ -2,6 +2,7 @@ package com.lishang.checkin;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.database.Observable;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -9,12 +10,16 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.SparseArray;
+import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Adapter;
 
-import com.lishang.checkin.adapter.CheckInAdapter;
 import com.lishang.library.R;
 
 
@@ -22,6 +27,8 @@ import com.lishang.library.R;
  * 签到进度
  */
 public class CheckInProgress extends View {
+    private final static String TAG = "CheckInProgress";
+
     private int textDateSize = 12; //日期文字大小sp
     private int textDateColor = 0xff8e8e8e;
     private int radius = 9;// 半径 dp
@@ -39,6 +46,9 @@ public class CheckInProgress extends View {
     private int checkInProgressColor = lineColor;
     private int checkInColor = checkInProgressColor;
     private int checkInHookColor = lineColor;
+    private int checkInHookSize = circleStrokeWidth;
+    private boolean checkInLeakShow = false; //是否显示漏签
+
 
     private Paint datePaint; //日期画笔
     private Paint scorePaint;//分数画笔
@@ -51,7 +61,11 @@ public class CheckInProgress extends View {
     private SparseArray<Point> datePointPool = new SparseArray<>(); //记录日期位置
     private SparseArray<Point> scorePointPool = new SparseArray<>(); //记录分数位置
     private SparseArray<Point> circlePointPool = new SparseArray<>(); //记录圆位置
-    private CheckInAdapter adapter;
+    private Adapter adapter;
+
+    private Point downPoint = new Point();
+    private OnClickCheckInListener listener;
+    private CheckInProgressDataObserver mObserver;
 
     enum Align {
         TOP, CENTER, BOTTOM
@@ -106,12 +120,15 @@ public class CheckInProgress extends View {
         checkInProgressColor = array.getColor(R.styleable.CheckInProgress_check_in_progress_color, checkInProgressColor);
         checkInColor = array.getColor(R.styleable.CheckInProgress_check_in_color, checkInColor);
         checkInHookColor = array.getColor(R.styleable.CheckInProgress_check_in_hook_color, checkInHookColor);
+        checkInHookSize = array.getDimensionPixelOffset(R.styleable.CheckInProgress_check_in_hook_size, checkInHookSize);
+        checkInLeakShow = array.getBoolean(R.styleable.CheckInProgress_check_in_leak_show, checkInLeakShow);
 
         array.recycle();
         init();
     }
 
     private void init() {
+        mObserver = new CheckInProgressDataObserver();
 
         linePaint = new Paint();
         linePaint.setAntiAlias(true);
@@ -219,10 +236,15 @@ public class CheckInProgress extends View {
             scorePaint.setColor(textScoreColor);
             scorePaint.setTextAlign(Paint.Align.CENTER);
             String str = "+" + adapter.getScoreText(i);
-
+            if (adapter.isLeakCheckIn(i) && checkInLeakShow) {
+                str = "补";
+            }
             Rect rect = new Rect();
             scorePaint.getTextBounds(str, 0, str.length(), rect);
-            Point point = new Point(p.x, p.y + rect.height() / 2);
+
+            Paint.FontMetricsInt fontMetrics = scorePaint.getFontMetricsInt();
+
+            Point point = new Point(p.x, p.y + (fontMetrics.descent - fontMetrics.ascent) / 2 - fontMetrics.descent);
             scorePointPool.put(i, point);
         }
 
@@ -322,7 +344,7 @@ public class CheckInProgress extends View {
                     //画勾
                     scorePaint.setStyle(Paint.Style.FILL);
                     scorePaint.setColor(checkInHookColor);
-                    scorePaint.setStrokeWidth((circleStrokeWidth));
+                    scorePaint.setStrokeWidth((checkInHookSize));
                     int startX = p.x - radiusPx / 4 * 3;
                     int startY = p.y + margin;
                     int stopX = p.x - radiusPx / 4;
@@ -335,7 +357,7 @@ public class CheckInProgress extends View {
                     stopY = p.y + margin - radiusPx / 2;
                     canvas.drawLine(startX, startY, stopX, stopY, scorePaint);
 
-                    canvas.drawCircle(startX, startY, circleStrokeWidth / 2.0f, scorePaint);
+                    canvas.drawCircle(startX, startY, checkInHookSize / 2.0f, scorePaint);
                 }
 
 
@@ -356,6 +378,9 @@ public class CheckInProgress extends View {
                 scorePaint.setColor(textScoreColor);
                 scorePaint.setTextAlign(Paint.Align.CENTER);
                 String str = "+" + adapter.getScoreText(i);
+                if (adapter.isLeakCheckIn(i) && checkInLeakShow) {
+                    str = "补";
+                }
 
                 Point point = scorePointPool.get(i);
 
@@ -365,12 +390,388 @@ public class CheckInProgress extends View {
         }
     }
 
-    public void setAdapter(CheckInAdapter adapter) {
+    public void setAdapter(Adapter adapter) {
+        if (this.adapter != null) {
+            adapter.unregisterAdapterDataObserver(mObserver);
+        }
         if (adapter != null) {
             this.adapter = adapter;
+            adapter.registerAdapterDataObserver(mObserver);
             requestLayout();
         }
     }
 
+    public Adapter getAdapter() {
+        return adapter;
+    }
+
+    public void setOnClickCheckInListener(OnClickCheckInListener listener) {
+        this.listener = listener;
+    }
+
+    public int getTextDateSize() {
+        return textDateSize;
+    }
+
+    /**
+     * 设置日期字体大小
+     *
+     * @param textDateSize 单位sp
+     */
+    public void setTextDateSize(int textDateSize) {
+        this.textDateSize = sp2px(textDateSize);
+    }
+
+    public int getTextDateColor() {
+        return textDateColor;
+    }
+
+    /**
+     * 日期字体颜色
+     *
+     * @param textDateColor
+     */
+    public void setTextDateColor(int textDateColor) {
+        this.textDateColor = textDateColor;
+    }
+
+    public int getRadius() {
+        return radius;
+    }
+
+    /**
+     * 签到圆的半径
+     *
+     * @param radius dp
+     */
+    public void setRadius(int radius) {
+        this.radius = dp2px(radius);
+    }
+
+    public int getCircleColor() {
+        return circleColor;
+    }
+
+    /**
+     * 签到圆的背景色
+     *
+     * @param circleColor
+     */
+    public void setCircleColor(int circleColor) {
+        this.circleColor = circleColor;
+    }
+
+    public int getLineHeight() {
+        return lineHeight;
+    }
+
+    /**
+     * 连接线高度 单位dp
+     *
+     * @param lineHeight
+     */
+    public void setLineHeight(int lineHeight) {
+        this.lineHeight = dp2px(lineHeight);
+    }
+
+    public int getLineColor() {
+        return lineColor;
+    }
+
+    /**
+     * 连接线颜色
+     *
+     * @param lineColor
+     */
+    public void setLineColor(int lineColor) {
+        this.lineColor = lineColor;
+    }
+
+    public int getTextScoreSize() {
+        return textScoreSize;
+    }
+
+    /**
+     * 设置签到积分字体大小
+     *
+     * @param textScoreSize
+     */
+    public void setTextScoreSize(int textScoreSize) {
+        this.textScoreSize = sp2px(textScoreSize);
+    }
+
+    public int getTextScoreColor() {
+        return textScoreColor;
+    }
+
+    /**
+     * 设置签到积分颜色
+     *
+     * @param textScoreColor
+     */
+    public void setTextScoreColor(int textScoreColor) {
+        this.textScoreColor = textScoreColor;
+    }
+
+    public Bitmap getCheckIn() {
+        return checkIn;
+    }
+
+    /**
+     * 设置签到图片
+     *
+     * @param checkIn
+     */
+    public void setCheckIn(Bitmap checkIn) {
+        this.checkIn = checkIn;
+    }
+
+    public int getCircleMargin() {
+        return circleMargin;
+    }
+
+    /**
+     * 设置签到圆与日期的间距
+     *
+     * @param circleMargin
+     */
+    public void setCircleMargin(int circleMargin) {
+        this.circleMargin = dp2px(circleMargin);
+    }
+
+    public Paint.Style getCircleStyle() {
+        return circleStyle;
+    }
+
+    /**
+     * 未签到圆的样式
+     *
+     * @param circleStyle
+     */
+    public void setCircleStyle(Paint.Style circleStyle) {
+        this.circleStyle = circleStyle;
+    }
+
+    public int getCircleStrokeWidth() {
+        return circleStrokeWidth;
+    }
+
+    /**
+     * 未签到圆描边大小
+     *
+     * @param circleStrokeWidth
+     */
+    public void setCircleStrokeWidth(int circleStrokeWidth) {
+        this.circleStrokeWidth = dp2px(circleStrokeWidth);
+    }
+
+    public int getCircleStrokeColor() {
+        return circleStrokeColor;
+    }
+
+    /**
+     * 未签到圆描边颜色
+     *
+     * @param circleStrokeColor
+     */
+    public void setCircleStrokeColor(int circleStrokeColor) {
+        this.circleStrokeColor = circleStrokeColor;
+    }
+
+    public boolean isCheckInProgressShow() {
+        return checkInProgressShow;
+    }
+
+    /**
+     * 是否显示签到进度
+     *
+     * @param checkInProgressShow
+     */
+    public void setCheckInProgressShow(boolean checkInProgressShow) {
+        this.checkInProgressShow = checkInProgressShow;
+    }
+
+    public int getCheckInProgressColor() {
+        return checkInProgressColor;
+    }
+
+    /**
+     * 签到进度的颜色
+     *
+     * @param checkInProgressColor
+     */
+    public void setCheckInProgressColor(int checkInProgressColor) {
+        this.checkInProgressColor = checkInProgressColor;
+    }
+
+    public int getCheckInColor() {
+        return checkInColor;
+    }
+
+    /**
+     * 未设置敲到图片时，签到背景的颜色
+     *
+     * @param checkInColor
+     */
+    public void setCheckInColor(int checkInColor) {
+        this.checkInColor = checkInColor;
+    }
+
+    public int getCheckInHookColor() {
+        return checkInHookColor;
+    }
+
+    /**
+     * 未设置敲到图片时，签到中线勾的颜色
+     *
+     * @param checkInHookColor
+     */
+    public void setCheckInHookColor(int checkInHookColor) {
+        this.checkInHookColor = checkInHookColor;
+    }
+
+    public int getCheckInHookSize() {
+        return checkInHookSize;
+    }
+
+    /**
+     * 未设置敲到图片时，签到中线勾的大小
+     *
+     * @param checkInHookSize
+     */
+    public void setCheckInHookSize(int checkInHookSize) {
+        this.checkInHookSize = dp2px(checkInHookSize);
+    }
+
+    public boolean isCheckInLeakShow() {
+        return checkInLeakShow;
+    }
+
+    /**
+     * 是否显示补签
+     *
+     * @param checkInLeakShow
+     */
+    public void setCheckInLeakShow(boolean checkInLeakShow) {
+        this.checkInLeakShow = checkInLeakShow;
+    }
+
+
+    public Align getAlign() {
+        return align;
+    }
+
+    /**
+     * 位置
+     *
+     * @param align
+     */
+    public void setAlign(Align align) {
+        this.align = align;
+    }
+
+    /**
+     * dp转像素
+     *
+     * @param size
+     * @return
+     */
+    private int dp2px(int size) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, getResources().getDisplayMetrics());
+    }
+
+    /**
+     * sp转像素
+     *
+     * @param size
+     * @return
+     */
+    private int sp2px(int size) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, getResources().getDisplayMetrics());
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        if (listener == null) return false;
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            downPoint.x = (int) event.getX();
+            downPoint.y = (int) event.getY();
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            int x = (int) event.getX();
+            int y = (int) event.getY();
+            int margin = calculationAlign();
+            for (int i = 0; i < circlePointPool.size(); i++) {
+                Point p = circlePointPool.get(i);
+                Rect rect = new Rect(p.x - radius, p.y + margin - radius, p.x + radius, p.y + margin + radius);
+                if (rect.contains(downPoint.x, downPoint.y) && rect.contains(x, y)) {
+                    listener.OnClick(i);
+                    break;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    static class AdapterDataObservable extends Observable<AdapterDataObserver> {
+
+        public void notifyChanged() {
+            Log.d(TAG, "notifyChanged observable changed");
+            for (int i = this.mObservers.size() - 1; i >= 0; --i) {
+                (this.mObservers.get(i)).onChanged();
+            }
+        }
+    }
+
+
+    private abstract class AdapterDataObserver {
+        public void onChanged() {
+        }
+    }
+
+    private class CheckInProgressDataObserver extends AdapterDataObserver {
+        @Override
+        public void onChanged() {
+            Log.d(TAG, "CheckInProgressDataObserver changed");
+            CheckInProgress that = CheckInProgress.this;
+
+            that.requestLayout();
+
+            that.postInvalidate();
+        }
+    }
+
+    public static abstract class Adapter {
+        private final AdapterDataObservable mObservable = new AdapterDataObservable();
+
+        public abstract String getDateText(int position);
+
+        public abstract String getScoreText(int position);
+
+        public abstract boolean isCheckIn(int position);
+
+        public abstract int size();
+
+        public boolean isLeakCheckIn(int position) {
+            return false;
+        }
+
+        private void registerAdapterDataObserver(@NonNull AdapterDataObserver observer) {
+            Log.d(TAG, "register adapter observer");
+            this.mObservable.registerObserver(observer);
+        }
+
+        private void unregisterAdapterDataObserver(@NonNull AdapterDataObserver observer) {
+            Log.d(TAG, "unregister adapter observer");
+            this.mObservable.unregisterObserver(observer);
+        }
+
+        public void notifyDataSetChanged() {
+            Log.d(TAG, "notifyDataSetChanged observable changed");
+            this.mObservable.notifyChanged();
+        }
+
+    }
 
 }

@@ -31,4 +31,29 @@
         app:text_score_color="#9bccff"
         app:text_score_size="12sp" />
 
+
+    <com.lishang.checkin.CheckInProgress
+        android:id="@+id/checkIn_1"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:background="#408ce2"
+        app:align="center"
+        app:check_in_color="#ceebfd"
+        app:check_in_hook_color="#2d66d9"
+        app:check_in_leak_show="true"
+        app:circle_color="#2d66d9"
+        app:circle_margin="5dp"
+        app:circle_stroke_color="#ceebfd"
+        app:circle_stroke_width="1dp"
+        app:circle_style="stroke"
+        app:line_color="#2d66d9"
+        app:line_height="1dp"
+        app:radius="10dp"
+        app:text_date_color="#edffff"
+        app:text_date_size="12sp"
+        app:text_score_color="#9bccff"
+        app:text_score_size="12sp" />
+
 </LinearLayout>

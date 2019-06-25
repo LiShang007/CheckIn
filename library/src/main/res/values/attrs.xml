@@ -28,8 +28,10 @@
         <attr name="check_in_bitmap" format="reference" />
         <!--没有签到图片时，签到的颜色-->
         <attr name="check_in_color" format="color" />
-        <!--没有签到图片时，签到内部的颜色-->
+        <!--没有签到图片时，签到内部勾的颜色-->
         <attr name="check_in_hook_color" format="color" />
+        <!--没有签到图片时，签到内部勾的大小-->
+        <attr name="check_in_hook_size" format="dimension" />
         <!--签到圆顶部与日期字体距离-->
         <attr name="circle_margin" format="dimension" />
         <!--签到圆描边宽度-->
@@ -44,5 +46,7 @@
         <!--是否显示签到进度-->
         <attr name="check_in_progress_show" format="boolean" />
         <attr name="check_in_progress_color" format="color" />
+        <!--漏签显示-->
+        <attr name="check_in_leak_show" format="boolean" />
     </declare-styleable>
 </resources>

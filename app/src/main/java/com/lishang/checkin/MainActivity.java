@@ -2,12 +2,14 @@ package com.lishang.checkin;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
 
-import com.lishang.checkin.adapter.CheckInAdapter;
 import com.lishang.checkin.bean.CheckIn;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -15,17 +17,21 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private CheckInProgress checkIn;
+    private CheckInProgress checkIn1;
+
     private List<CheckIn> list = new ArrayList<>();
+    private List<CheckIn> list1 = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         checkIn = findViewById(R.id.checkIn);
+        checkIn1 = findViewById(R.id.checkIn_1);
 
-        initDate();
+        init();
 
-        checkIn.setAdapter(new CheckInAdapter() {
+        checkIn.setAdapter(new CheckInProgress.Adapter() {
 
             @Override
             public String getDateText(int position) {
@@ -42,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean isCheckIn(int position) {
                 CheckIn in = list.get(position);
-                return position < 3;
+                return in.isCheckIn;
             }
 
             @Override
@@ -50,6 +56,88 @@ public class MainActivity extends AppCompatActivity {
                 return list.size();
             }
         });
+
+        checkIn1.setAdapter(new CheckInProgress.Adapter() {
+
+            @Override
+            public String getDateText(int position) {
+                CheckIn in = list.get(position);
+                return in.date;
+            }
+
+            @Override
+            public String getScoreText(int position) {
+                CheckIn in = list1.get(position);
+                return in.score;
+            }
+
+            @Override
+            public boolean isCheckIn(int position) {
+                CheckIn in = list1.get(position);
+                return in.isCheckIn;
+            }
+
+            @Override
+            public int size() {
+                return list1.size();
+            }
+
+            @Override
+            public boolean isLeakCheckIn(int position) {
+                CheckIn in = list1.get(position);
+
+                return in.isLeakChekIn;
+            }
+        });
+
+
+        checkIn1.setOnClickCheckInListener(new OnClickCheckInListener() {
+            @Override
+            public void OnClick(int position) {
+                CheckIn checkIn = list1.get(position);
+                if (checkIn.isCheckIn) {
+                    Toast.makeText(getApplicationContext(), "已签到", Toast.LENGTH_SHORT).show();
+                } else {
+                    if (checkIn.isLeakChekIn) {
+                        Toast.makeText(getApplicationContext(), "补卡", Toast.LENGTH_SHORT).show();
+                        checkIn.isLeakChekIn = false;
+                        checkIn.isCheckIn = true;
+
+                        Log.e("CheckIn", Arrays.toString(list1.toArray()));
+
+                        checkIn1.getAdapter().notifyDataSetChanged();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "签到", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
+
+    }
+
+    private void init() {
+        for (int i = 0; i < 7; i++) {
+            CheckIn checkIn = new CheckIn();
+            checkIn.date = "06.2" + i;
+            if (i == 3) {
+                checkIn.date = "今日";
+            }
+            checkIn.score = "" + (i + 1);
+            checkIn.isCheckIn = i < 4;
+            list.add(checkIn);
+        }
+
+        for (int i = 0; i < 7; i++) {
+            CheckIn checkIn = new CheckIn();
+            checkIn.date = "06.2" + i;
+            if (i == 3) {
+                checkIn.date = "今日";
+            }
+            checkIn.score = "" + (i + 1);
+            checkIn.isCheckIn = i < 4 && i != 1;
+            checkIn.isLeakChekIn = i == 1;
+            list1.add(checkIn);
+        }
     }
 
 
@@ -75,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
         if (isToday(start)) {
 
             CheckIn in = new CheckIn();
-            in.date = "今天";
+            in.date = "今日";
             in.score = "" + score;
             list.add(in);
         } else {
@@ -95,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (isToday(start)) {
                 CheckIn in = new CheckIn();
-                in.date = "今天";
+                in.date = "今日";
                 in.score = "" + score;
                 list.add(in);
             } else {
