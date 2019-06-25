@@ -38,7 +38,7 @@ publish {
     groupId = 'com.lishang'
     repoName = "maven"
     artifactId = 'checkInProgress'
-    publishVersion = '1.0.0'
+    publishVersion = '1.0.1'
     desc = '签到进度'
     website = 'https://github.com/LiShang007/CheckIn'
 }

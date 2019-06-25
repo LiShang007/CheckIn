@@ -58,30 +58,53 @@ public class MainActivity extends AppCompatActivity {
         });
 
         checkIn1.setAdapter(new CheckInProgress.Adapter() {
-
+            /**
+             * 日期
+             * @param position
+             * @return
+             */
             @Override
             public String getDateText(int position) {
                 CheckIn in = list.get(position);
                 return in.date;
             }
 
+            /**
+             * 积分
+             * @param position
+             * @return
+             */
             @Override
             public String getScoreText(int position) {
                 CheckIn in = list1.get(position);
                 return in.score;
             }
 
+            /**
+             * 是否签到
+             * @param position
+             * @return
+             */
             @Override
             public boolean isCheckIn(int position) {
                 CheckIn in = list1.get(position);
                 return in.isCheckIn;
             }
 
+            /**
+             * 数量
+             * @return
+             */
             @Override
             public int size() {
                 return list1.size();
             }
 
+            /**
+             * 是否支持补签
+             * @param position
+             * @return
+             */
             @Override
             public boolean isLeakCheckIn(int position) {
                 CheckIn in = list1.get(position);
